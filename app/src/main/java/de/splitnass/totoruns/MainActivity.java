@@ -27,16 +27,12 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
-
-import static android.R.attr.duration;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -55,9 +51,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private Location lastLocation;
 
+    private FirstFragment firstFragment;
     private SupportMapFragment mapFragment;
     private GoogleMap mMap;
-
+    private float totalDistance; // in meters
+    private float currentSpeed; // in meters/second
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -85,10 +83,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onLocationResult(LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
                     if (lastLocation != null) {
-                        makeToast("distance: " + location.distanceTo(lastLocation));
+                        totalDistance += location.distanceTo(lastLocation);
+                        if (lastLocation.hasSpeed()) {
+                            currentSpeed = lastLocation.getSpeed();
+                        }
                     }
                     lastLocation = location;
-                    updateLocation(location);
+                    locationUpdated();
 
                 }
             }
@@ -97,8 +98,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 lastLocation = location;
                                 makeToast("Last Location: " + location.toString());
                             }
-                            updateLocation(location);
+                            locationUpdated();
                         }
                     });
 
@@ -124,9 +125,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void updateLocation(Location currentLocation) {
-        if (currentLocation == null) return;
-        LatLng loc = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+    private void locationUpdated() {
+        if (firstFragment != null) {
+            firstFragment.setString(String.format("total distance: %f\nspeed: %f",
+                    totalDistance,
+                    currentSpeed * 1000 / 60));
+        }
+        if (lastLocation == null) return;
+        LatLng loc = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
         if (mMap != null) {
             mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         }
@@ -135,6 +141,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void makeToast(String text) {
         Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
         Log.i("TotoRuns", text);
+    }
+
+    public void reset(View view) {
+        lastLocation = null;
+        totalDistance = 0.0f;
+        currentSpeed = 0.0f;
     }
 
 
@@ -160,40 +172,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
-        }
-    }
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -207,33 +185,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         @Override
         public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            if (position == 1) {
+            if (position == 0) {
+                firstFragment = new FirstFragment();
+                return firstFragment;
+            } else if (position == 1) {
                 mapFragment = new SupportMapFragment();
                 mapFragment.getMapAsync(MainActivity.this);
                 return mapFragment;
-            } else return PlaceholderFragment.newInstance(position + 1);
+            }
+            return null;
         }
 
         @Override
         public int getCount() {
-            // Show 3 total pages.
-            return 3;
+            return 2;
         }
 
-        @Override
-        public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "SECTION 1";
-                case 1:
-                    return "SECTION 2";
-                case 2:
-                    return "SECTION 3";
-            }
-            return null;
-        }
+
     }
 
     @Override
