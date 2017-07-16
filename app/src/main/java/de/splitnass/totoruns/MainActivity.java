@@ -84,8 +84,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 for (Location location : locationResult.getLocations()) {
                     if (lastLocation != null) {
                         totalDistance += location.distanceTo(lastLocation);
-                        if (lastLocation.hasSpeed()) {
-                            currentSpeed = lastLocation.getSpeed();
+                        if (location.hasSpeed()) {
+                            currentSpeed = location.getSpeed();
                         }
                     }
                     lastLocation = location;
