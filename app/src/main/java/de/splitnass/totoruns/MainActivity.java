@@ -29,6 +29,8 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
@@ -187,10 +189,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         public Fragment getItem(int position) {
             if (position == 0) {
                 firstFragment = new FirstFragment();
+                MapView mapView = (MapView)firstFragment.getView().findViewById(R.id.mapView);
+                mapView.getMapAsync(MainActivity.this);
                 return firstFragment;
             } else if (position == 1) {
                 mapFragment = new SupportMapFragment();
-                mapFragment.getMapAsync(MainActivity.this);
+                //mapFragment.getMapAsync(MainActivity.this);
                 return mapFragment;
             }
             return null;
