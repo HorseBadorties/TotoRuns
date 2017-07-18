@@ -7,7 +7,12 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
+
+import com.google.android.gms.maps.MapView;
+
+import java.util.Date;
 
 
 public class FirstFragment extends Fragment {
@@ -16,8 +21,6 @@ public class FirstFragment extends Fragment {
     public FirstFragment() {
         // Required empty public constructor
     }
-
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -29,7 +32,10 @@ public class FirstFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_first, container, false);
+        View result = inflater.inflate(R.layout.fragment_first, container, false);
+        MapView mapView = (MapView)getView().findViewById(R.id.mapView);
+        ((MainActivity)getActivity()).mapViewActivated(mapView);
+        return result;
     }
 
     @Override
@@ -45,6 +51,7 @@ public class FirstFragment extends Fragment {
 
     public void setString(String text) {
         if (getView() != null) {
+            ((Button)getView().findViewById(R.id.button3)).setText("Update: " + System.currentTimeMillis());
             TextView textView = (TextView) getView().findViewById(R.id.firstText);
             textView.setText(text);
         }
