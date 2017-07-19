@@ -1,26 +1,16 @@
 package de.splitnass.totoruns;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.icu.text.DateFormat;
 import android.icu.text.NumberFormat;
 import android.location.Location;
-import android.support.v4.app.ActivityCompat;
+import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,21 +22,23 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
 
     private GoogleMap googleMap;
 
-    private Location lastLocation;
+    private List<Location> locations = new ArrayList<>();
 
     private float totalDistance; // in meters
 
@@ -110,10 +102,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void locationUpdated(Location newLocation) {
         if (newLocation == null) return;
+        Location lastLocation = locations.isEmpty() ? null : locations.get(locations.size()-1);
         if (lastLocation != null) {
             totalDistance += newLocation.distanceTo(lastLocation);
         }
-
+        locations.add(newLocation);
         StringBuilder message = new StringBuilder();
         message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
         int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
@@ -133,6 +126,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         lastLocation = newLocation;
 
         googleMap.clear();
+
+        // draw Polyline, move Camera and add marker
+        PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED).width(5);
+        for (Location l : locations) {
+            polylineOptions.add(new LatLng(l.getLatitude(), l.getLongitude()));
+        }
+        googleMap.addPolyline(polylineOptions);
         LatLng loc = new LatLng(newLocation.getLatitude(), newLocation.getLongitude());
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         googleMap.addMarker(new MarkerOptions().position(loc));
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void reset(View view) {
-        lastLocation = null;
+        locations.clear();
         totalDistance = 0.0f;
     }
 
