@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.MapView;
 
 import java.util.Date;
@@ -33,8 +34,8 @@ public class FirstFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View result = inflater.inflate(R.layout.fragment_first, container, false);
-        MapView mapView = (MapView)getView().findViewById(R.id.mapView);
-        ((MainActivity)getActivity()).mapViewActivated(mapView);
+        MapView mapView = (MapView)result.findViewById(R.id.mapView);
+        mapView.getMapAsync((MainActivity)getActivity());
         return result;
     }
 

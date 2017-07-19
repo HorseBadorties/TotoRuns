@@ -18,7 +18,8 @@
         android:id="@+id/firstText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/hello_blank_fragment" />
+        android:text="@string/hello_blank_fragment"
+        android:textSize="18sp" />
 
     <com.google.android.gms.maps.MapView
         android:id="@+id/mapView"

@@ -2,6 +2,8 @@ package de.splitnass.totoruns;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.icu.text.DateFormat;
+import android.icu.text.NumberFormat;
 import android.location.Location;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -35,6 +37,8 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.util.Date;
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     /**
@@ -56,7 +60,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private SupportMapFragment mapFragment;
     private GoogleMap mMap;
     private float totalDistance; // in meters
-    private float currentSpeed; // in meters/second
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -83,25 +86,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
-                    if (lastLocation != null) {
-                        totalDistance += location.distanceTo(lastLocation);
-                        if (location.hasSpeed()) {
-                            currentSpeed = location.getSpeed();
-                        }
+                    if (location != null) {
+                        locationUpdated(location);
                     }
-                    lastLocation = location;
-                    locationUpdated();
-
                 }
             }
 
         };
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(5000);
-        mLocationRequest.setFastestInterval(1000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationRequest mLocationRequest = LocationRequest.create()
+                .setInterval(5000)
+                .setFastestInterval(1000)
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
             mFusedLocationClient.getLastLocation()
@@ -110,10 +107,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         public void onSuccess(Location location) {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                lastLocation = location;
-                                makeToast("Last Location: " + location.toString());
+                                makeToast("Got initial Location");
+                                locationUpdated(location);
                             }
-                            locationUpdated();
                         }
                     });
 
@@ -126,13 +122,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void locationUpdated() {
-        if (firstFragment != null) {
-            firstFragment.setString(String.format("total distance: %f\nspeed: %f",
-                    totalDistance,
-                    currentSpeed * 1000 / 60));
+    private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
+    static {
+        numberFormat.setMaximumFractionDigits(2);
+    }
+
+    private void locationUpdated(Location newLocation) {
+        if (newLocation == null) return;
+        if (lastLocation != null) {
+            totalDistance += newLocation.distanceTo(lastLocation);
         }
-        if (lastLocation == null) return;
+
+        if (firstFragment != null) {
+            StringBuilder message = new StringBuilder();
+            message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
+            int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
+            message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
+            message.append("\nAccuracy : " + newLocation.getAccuracy());
+            float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
+            message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
+            message.append("\nTotal distance : " + numberFormat.format(totalDistance));
+            message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
+            message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
+            float calculatedSpeed = distanceToLastLocation/secondsSinceLastLocation;
+            message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
+
+
+            firstFragment.setString(message.toString());
+        }
+
+        lastLocation = newLocation;
+
         LatLng loc = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
         if (mMap != null) {
             mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
@@ -147,7 +167,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void reset(View view) {
         lastLocation = null;
         totalDistance = 0.0f;
-        currentSpeed = 0.0f;
     }
 
 
@@ -191,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return firstFragment;
             } else if (position == 1) {
                 mapFragment = new SupportMapFragment();
-                //mapFragment.getMapAsync(MainActivity.this);
+                mapFragment.getMapAsync(MainActivity.this);
                 return mapFragment;
             }
             return null;
@@ -203,10 +222,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
 
-    }
-
-    public void mapViewActivated(MapView mapView) {
-        mapView.getMapAsync(this);
     }
 
     @Override
