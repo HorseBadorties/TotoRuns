@@ -31,40 +31,26 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
 
-    private FusedLocationProviderClient mFusedLocationClient;
-    private LocationCallback mLocationCallback;
+    private GoogleMap googleMap;
 
     private Location lastLocation;
 
-    private FirstFragment firstFragment;
-    private SupportMapFragment mapFragment;
-    private GoogleMap mMap;
     private float totalDistance; // in meters
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    private ViewPager mViewPager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,16 +59,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
+        MapFragment mapFragment = (MapFragment)getFragmentManager().findFragmentById(R.id.mapFragment);
+        mapFragment.getMapAsync(this);
 
-
-        mLocationCallback = new LocationCallback() {
+        LocationCallback mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
@@ -94,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         };
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         LocationRequest mLocationRequest = LocationRequest.create()
                 .setInterval(5000)
                 .setFastestInterval(1000)
@@ -133,30 +114,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             totalDistance += newLocation.distanceTo(lastLocation);
         }
 
-        if (firstFragment != null) {
-            StringBuilder message = new StringBuilder();
-            message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
-            int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
-            message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
-            message.append("\nAccuracy : " + newLocation.getAccuracy());
-            float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
-            message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
-            message.append("\nTotal distance : " + numberFormat.format(totalDistance));
-            message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
-            message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
-            float calculatedSpeed = distanceToLastLocation/secondsSinceLastLocation;
-            message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
+        StringBuilder message = new StringBuilder();
+        message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
+        int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
+        message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
+        message.append("\nAccuracy : " + newLocation.getAccuracy());
+        float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
+        message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
+        message.append("\nTotal distance : " + numberFormat.format(totalDistance));
+        message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
+        message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
+        float calculatedSpeed = distanceToLastLocation/secondsSinceLastLocation;
+        message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
+        TextView textView = (TextView) findViewById(R.id.firstText);
+        textView.setText(message.toString());
 
-
-            firstFragment.setString(message.toString());
-        }
 
         lastLocation = newLocation;
 
-        LatLng loc = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
-        if (mMap != null) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
-        }
+        googleMap.clear();
+        LatLng loc = new LatLng(newLocation.getLatitude(), newLocation.getLongitude());
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
+        googleMap.addMarker(new MarkerOptions().position(loc));
+
     }
 
     private void makeToast(String text) {
@@ -192,52 +172,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return super.onOptionsItemSelected(item);
     }
 
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            if (position == 0) {
-                firstFragment = new FirstFragment();
-                return firstFragment;
-            } else if (position == 1) {
-                mapFragment = new SupportMapFragment();
-                mapFragment.getMapAsync(MainActivity.this);
-                return mapFragment;
-            }
-            return null;
-        }
-
-        @Override
-        public int getCount() {
-            return 2;
-        }
-
-
-    }
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        mMap.setMyLocationEnabled(false);
+        this.googleMap = googleMap;
+        Toast.makeText(getApplicationContext(), "Map is ready", Toast.LENGTH_SHORT).show();
     }
+
+
+
 }
