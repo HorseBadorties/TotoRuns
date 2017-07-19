@@ -102,37 +102,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void locationUpdated(Location newLocation) {
-        if (newLocation == null || !isActive) return;
-        Location lastLocation = locations.isEmpty() ? null : locations.get(locations.size()-1);
-        if (lastLocation != null) {
-            totalDistance += newLocation.distanceTo(lastLocation);
-        }
-        locations.add(newLocation);
-        StringBuilder message = new StringBuilder();
-        message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
-        int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
-        message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
-        message.append("\nAccuracy : " + newLocation.getAccuracy());
-        float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
-        message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
-        message.append("\nTotal distance : " + numberFormat.format(totalDistance));
-        message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
-        message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
-        float calculatedSpeed = distanceToLastLocation/secondsSinceLastLocation;
-        message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
-        TextView textView = (TextView) findViewById(R.id.firstText);
-        textView.setText(message.toString());
+        if (newLocation == null) return;
 
-        // Update the map
         googleMap.clear();
-        PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED).width(5);
-        for (Location l : locations) {
-            polylineOptions.add(new LatLng(l.getLatitude(), l.getLongitude()));
-        }
-        googleMap.addPolyline(polylineOptions);
         LatLng loc = new LatLng(newLocation.getLatitude(), newLocation.getLongitude());
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         googleMap.addMarker(new MarkerOptions().position(loc));
+        TextView textView = (TextView) findViewById(R.id.firstText);
+        if (!isActive) {
+            textView.setText("\nAccuracy : " + newLocation.getAccuracy());
+        } else {
+            Location lastLocation = locations.isEmpty() ? null : locations.get(locations.size() - 1);
+            if (lastLocation != null) {
+                totalDistance += newLocation.distanceTo(lastLocation);
+            }
+            locations.add(newLocation);
+            StringBuilder message = new StringBuilder();
+            message.append("\nAccuracy : " + newLocation.getAccuracy());
+            message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
+            int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
+            message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
+            float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
+            message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
+            message.append("\nTotal distance : " + numberFormat.format(totalDistance));
+            message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
+            message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
+            float calculatedSpeed = distanceToLastLocation / secondsSinceLastLocation;
+            message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
+            textView.setText(message.toString());
+
+            PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED).width(5);
+            for (Location l : locations) {
+                polylineOptions.add(new LatLng(l.getLatitude(), l.getLongitude()));
+            }
+            googleMap.addPolyline(polylineOptions);
+        }
 
     }
 
