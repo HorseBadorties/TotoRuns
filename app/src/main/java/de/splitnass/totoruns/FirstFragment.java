@@ -1,7 +1,6 @@
 package de.splitnass.totoruns;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -9,14 +8,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
 
-import java.util.Date;
 
-
-public class FirstFragment extends Fragment {
+public class FirstFragment extends Fragment implements OnMapReadyCallback {
 
 
     public FirstFragment() {
@@ -35,7 +34,8 @@ public class FirstFragment extends Fragment {
         // Inflate the layout for this fragment
         View result = inflater.inflate(R.layout.fragment_first, container, false);
         MapView mapView = (MapView)result.findViewById(R.id.mapView);
-        mapView.getMapAsync((MainActivity)getActivity());
+        //mapView.getMapAsync((MainActivity)getActivity());
+        mapView.getMapAsync(this);
         return result;
     }
 
@@ -64,4 +64,8 @@ public class FirstFragment extends Fragment {
         ((MainActivity)getActivity()).reset(view);
     }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        Toast.makeText(getContext(), "Map is ready", Toast.LENGTH_SHORT).show();
+    }
 }
