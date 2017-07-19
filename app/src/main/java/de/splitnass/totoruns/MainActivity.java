@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             isActive = true;
         }
         Button button = (Button) findViewById(R.id.button3);
-        button.setText(isActive ? "Start" : "Stop");
+        button.setText(isActive ? "Stop" : "Start");
     }
 
     public boolean isActive() {
