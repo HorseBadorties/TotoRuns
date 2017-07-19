@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private float totalDistance; // in meters
 
-
+    private boolean isActive = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void locationUpdated(Location newLocation) {
-        if (newLocation == null) return;
+        if (newLocation == null || !isActive) return;
         Location lastLocation = locations.isEmpty() ? null : locations.get(locations.size()-1);
         if (lastLocation != null) {
             totalDistance += newLocation.distanceTo(lastLocation);
@@ -122,12 +123,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         TextView textView = (TextView) findViewById(R.id.firstText);
         textView.setText(message.toString());
 
-
-        lastLocation = newLocation;
-
+        // Update the map
         googleMap.clear();
-
-        // draw Polyline, move Camera and add marker
         PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED).width(5);
         for (Location l : locations) {
             polylineOptions.add(new LatLng(l.getLatitude(), l.getLongitude()));
@@ -144,9 +141,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.i("TotoRuns", text);
     }
 
-    public void reset(View view) {
-        locations.clear();
-        totalDistance = 0.0f;
+    public void toggleActive(View view) {
+        if (isActive) {
+            isActive = false;
+        } else {
+            locations.clear();
+            totalDistance = 0.0f;
+            isActive = true;
+        }
+        Button button = (Button) findViewById(R.id.button3);
+        button.setText(isActive ? "Start" : "Stop");
+    }
+
+    public boolean isActive() {
+        return isActive;
     }
 
 
