@@ -26,7 +26,6 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
@@ -39,11 +38,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private GoogleMap googleMap;
 
-    private List<Location> locations = new ArrayList<>();
-
-    private float totalDistance; // in meters
-
-    private boolean isActive = false;
+    private Run run = new Run();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,35 +104,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         googleMap.addMarker(new MarkerOptions().position(loc));
         TextView textView = (TextView) findViewById(R.id.firstText);
-        if (!isActive) {
-            textView.setText("\nAccuracy : " + newLocation.getAccuracy());
-        } else {
-            Location lastLocation = locations.isEmpty() ? null : locations.get(locations.size() - 1);
-            if (lastLocation != null) {
-                totalDistance += newLocation.distanceTo(lastLocation);
-            }
-            locations.add(newLocation);
-            StringBuilder message = new StringBuilder();
-            message.append("\nAccuracy : " + newLocation.getAccuracy());
-            message.append("\nTime : " + DateFormat.getDateTimeInstance().format(new Date(newLocation.getTime())));
-            int secondsSinceLastLocation = (int) (lastLocation != null ? (newLocation.getTime() - lastLocation.getTime()) / 1000 : 0);
-            message.append("\nSeconds since last Location: " + secondsSinceLastLocation);
-            float distanceToLastLocation = lastLocation != null ? newLocation.distanceTo(lastLocation) : 0;
-            message.append("\nDistance to last location: " + numberFormat.format(distanceToLastLocation));
-            message.append("\nTotal distance : " + numberFormat.format(totalDistance));
-            message.append("\nAltitude : " + numberFormat.format(newLocation.getAltitude()));
-            message.append("\n\nSpeed in km/h: " + numberFormat.format((newLocation.getSpeed() * 3.6)));
-            float calculatedSpeed = distanceToLastLocation / secondsSinceLastLocation;
-            message.append("\n\nCalculated Speed in km/h: " + numberFormat.format(calculatedSpeed * 3.6));
-            textView.setText(message.toString());
+        if (run.isActive()) {
+            run.addLocation(newLocation);
+        }
 
+        StringBuilder message = new StringBuilder();
+        message.append("\nAccuracy : " + newLocation.getAccuracy());
+        message.append("\nDuration : " + run.getDurationString());
+        message.append("\nDistance : " + run.getTotalDistanceString());
+        message.append("\nSpeed : " + run.getLastSpeedString());
+        message.append("\nPace : " + run.getPaceString());
+        textView.setText(message.toString());
+
+        if (run.isActive()) {
             PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED).width(5);
-            for (Location l : locations) {
+            for (Location l : run.getLocations()) {
                 polylineOptions.add(new LatLng(l.getLatitude(), l.getLongitude()));
             }
             googleMap.addPolyline(polylineOptions);
         }
-
     }
 
     private void makeToast(String text) {
@@ -146,19 +131,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void toggleActive(View view) {
-        if (isActive) {
-            isActive = false;
+        if (run.isActive()) {
+            run.stop();
         } else {
-            locations.clear();
-            totalDistance = 0.0f;
-            isActive = true;
+            run.start();
         }
         Button button = (Button) findViewById(R.id.button3);
-        button.setText(isActive ? "Stop" : "Start");
-    }
-
-    public boolean isActive() {
-        return isActive;
+        button.setText(run.isActive() ? "Stop" : "Start");
     }
 
 
