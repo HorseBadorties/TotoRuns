@@ -53,7 +53,7 @@ public class Run {
     }
 
     public float getLastAccuracy() {
-        return locations.isEmpty() ? 0 : locations.get(0).getAccuracy();
+        return lastLocation().getAccuracy();
     }
 
     public float getTotalDistance() {
@@ -71,11 +71,11 @@ public class Run {
     }
 
     public float getLastSpeed() {
-        return locations.isEmpty() ? 0 : locations.get(0).getSpeed() * 3.6f;
+        return lastLocation().getSpeed() * 3.6f;
     }
 
     public String getLastSpeedString() {
-        return numberFormat.format(getLastSpeed());
+        return numberFormat.format(getLastSpeed() + " km/h");
     }
 
     // minutes per km
@@ -84,7 +84,7 @@ public class Run {
     }
 
     public String getPaceString() {
-        return numberFormat.format(getPace());
+        return numberFormat.format(getPace()) + " minutes/km";
     }
 
     // millis
@@ -98,9 +98,13 @@ public class Run {
         return sdf.format(getDuration());
     }
 
+    private Location lastLocation() {
+        return locations.isEmpty() ? new Location("empty") : locations.get(locations.size()-1);
+    }
+
     public void addLocation(Location newLocation) {
         if (isActive() && !locations.isEmpty()) {
-            totalDistance += newLocation.distanceTo(locations.get(0));
+            totalDistance += newLocation.distanceTo(lastLocation());
         }
         locations.add(newLocation);
     }
