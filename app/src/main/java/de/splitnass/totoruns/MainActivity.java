@@ -30,7 +30,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationRequest mLocationRequest;
+    private LocationCallback mLocationCallback;
     private GoogleMap googleMap;
 
     private Run run;
@@ -47,7 +49,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         MapFragment mapFragment = (MapFragment)getFragmentManager().findFragmentById(R.id.mapFragment);
         mapFragment.getMapAsync(this);
 
-        LocationCallback mLocationCallback = new LocationCallback() {
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mLocationRequest = LocationRequest.create()
+                .setInterval(2000)
+                .setFastestInterval(1000)
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
@@ -58,12 +66,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
         };
-
-        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        LocationRequest mLocationRequest = LocationRequest.create()
-                .setInterval(2)
-                .setFastestInterval(1000)
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
             mFusedLocationClient.getLastLocation()
@@ -79,6 +81,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
 
 
+
+        } catch (SecurityException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
             mFusedLocationClient.requestLocationUpdates(mLocationRequest,
                     mLocationCallback,
                     null /* Looper */);
@@ -86,6 +98,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             ex.printStackTrace();
         }
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+    }
+
 
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
     static {
