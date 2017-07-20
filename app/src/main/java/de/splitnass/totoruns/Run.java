@@ -75,7 +75,7 @@ public class Run {
     }
 
     public String getLastSpeedString() {
-        return numberFormat.format(getLastSpeed() + " km/h");
+        return numberFormat.format(getLastSpeed()) + " km/h";
     }
 
     // minutes per km
