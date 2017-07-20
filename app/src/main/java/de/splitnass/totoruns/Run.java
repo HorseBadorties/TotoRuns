@@ -5,8 +5,9 @@ import android.icu.text.NumberFormat;
 import android.icu.text.SimpleDateFormat;
 import android.location.Location;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 public class Run {
@@ -14,12 +15,15 @@ public class Run {
     private long start, end;
     private List<Location> locations = new ArrayList<>();
     private float totalDistance; // in meters
+    private long beginCurrentKilometer, durationLastKilometer;
 
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
     static {
         numberFormat.setMaximumFractionDigits(2);
     }
-    private static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+    private static SimpleDateFormat durationFormatter = new SimpleDateFormat("HH:mm:ss");
+    private static SimpleDateFormat paceFormatter = new SimpleDateFormat("mm:ss");
+    private static Calendar calendar = new GregorianCalendar();
 
     public long getStart() {
         return start;
@@ -80,11 +84,20 @@ public class Run {
 
     // minutes per km
     public float getPace() {
-        return (getDuration()/1000) / getTotalDistance();
+        return totalDistance > 0 ? getDuration()/60/totalDistance : 0;
     }
 
     public String getPaceString() {
-        return numberFormat.format(getPace()) + " minutes/km";
+        return paceFormatter.format(getPace()*60*1000) + " Min/km";
+    }
+
+    // minutes per km
+    public float getKilometerPace() {
+      return durationLastKilometer > 0 ? durationLastKilometer/60/1000 : 0;
+    }
+
+    public String getKilometerPaceString() {
+        return paceFormatter.format(getKilometerPace()*60*1000) + " Min/km";
     }
 
     // millis
@@ -95,7 +108,7 @@ public class Run {
     }
 
     public String getDurationString() {
-        return sdf.format(getDuration());
+        return durationFormatter.format(getDuration());
     }
 
     private Location lastLocation() {
@@ -104,7 +117,17 @@ public class Run {
 
     public void addLocation(Location newLocation) {
         if (isActive() && !locations.isEmpty()) {
-            totalDistance += newLocation.distanceTo(lastLocation());
+            if (beginCurrentKilometer == 0) {
+                beginCurrentKilometer = System.currentTimeMillis();
+            }
+            float newDistance = locations.isEmpty() ? 0 : newLocation.distanceTo(lastLocation());
+            int currentKilometer = (int)(totalDistance/1000);
+            int newKilometer = (int)((totalDistance+newDistance)/1000);
+            if (newKilometer > currentKilometer) {
+                durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
+                beginCurrentKilometer = System.currentTimeMillis();
+            }
+            totalDistance += newDistance;
         }
         locations.add(newLocation);
     }

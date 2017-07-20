@@ -1,7 +1,6 @@
 package de.splitnass.totoruns;
 
 import android.graphics.Color;
-import android.icu.text.DateFormat;
 import android.icu.text.NumberFormat;
 import android.location.Location;
 import android.os.Bundle;
@@ -28,10 +27,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -65,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         LocationRequest mLocationRequest = LocationRequest.create()
-                .setInterval(5000)
+                .setInterval(2)
                 .setFastestInterval(1000)
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
@@ -109,10 +104,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         StringBuilder message = new StringBuilder();
-        message.append("Accuracy : " + newLocation.getAccuracy());
+        message.append("Accuracy : " + newLocation.getAccuracy() + "\tReadings: " + run.getLocations().size());
         message.append("\nDuration : " + run.getDurationString());
         message.append("\nDistance : " + run.getTotalDistanceString());
         message.append("\nSpeed : " + run.getLastSpeedString());
+        message.append("\nKM-Pace : " + run.getKilometerPaceString());
         message.append("\nPace : " + run.getPaceString());
         textView.setText(message.toString());
 
