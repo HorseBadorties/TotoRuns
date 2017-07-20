@@ -80,7 +80,7 @@ public class Run {
 
     // minutes per km
     public float getPace() {
-        return 0;
+        return (getDuration()/1000) / getTotalDistance();
     }
 
     public String getPaceString() {

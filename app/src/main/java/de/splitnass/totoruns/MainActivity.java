@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         StringBuilder message = new StringBuilder();
-        message.append("\nAccuracy : " + newLocation.getAccuracy());
+        message.append("Accuracy : " + newLocation.getAccuracy());
         message.append("\nDuration : " + run.getDurationString());
         message.append("\nDistance : " + run.getTotalDistanceString());
         message.append("\nSpeed : " + run.getLastSpeedString());
