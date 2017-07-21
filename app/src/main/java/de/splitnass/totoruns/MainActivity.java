@@ -1,6 +1,11 @@
 package de.splitnass.totoruns;
 
+import android.content.Context;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.icu.text.NumberFormat;
 import android.location.Location;
 import android.os.Bundle;
@@ -28,12 +33,16 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+import java.util.Arrays;
+
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
 
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
     private GoogleMap googleMap;
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
 
     private Run run;
 
@@ -79,12 +88,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }
                         }
                     });
-
-
-
         } catch (SecurityException ex) {
             ex.printStackTrace();
         }
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
 
     @Override
@@ -97,12 +106,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch (SecurityException ex) {
             ex.printStackTrace();
         }
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        mSensorManager.unregisterListener(this);
     }
 
 
@@ -186,5 +197,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        Log.i("Accelerometer", "Movement x-axis: " + Math.abs(event.values[0]));
+    }
 
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
 }
