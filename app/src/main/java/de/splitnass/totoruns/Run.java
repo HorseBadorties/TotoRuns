@@ -21,7 +21,6 @@ public class Run {
     static {
         numberFormat.setMaximumFractionDigits(2);
     }
-    private static SimpleDateFormat durationFormatter = new SimpleDateFormat("HH:mm:ss");
     private static SimpleDateFormat paceFormatter = new SimpleDateFormat("mm:ss");
     private static Calendar calendar = new GregorianCalendar();
 
@@ -108,7 +107,12 @@ public class Run {
     }
 
     public String getDurationString() {
-        return durationFormatter.format(getDuration());
+        long seconds = getDuration()/1000;
+        return String.format(
+                "%d:%02d:%02d",
+                seconds / 3600,
+                (seconds % 3600) / 60,
+                seconds % 60);
     }
 
     private Location lastLocation() {
