@@ -108,6 +108,7 @@ public class Run {
 
     public String getDurationString() {
         long seconds = getDuration()/1000;
+
         return String.format(
                 "%d:%02d:%02d",
                 seconds / 3600,
