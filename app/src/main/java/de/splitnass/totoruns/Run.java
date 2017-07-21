@@ -22,7 +22,10 @@ public class Run {
     private long start, end;
     private List<Location> locations = new ArrayList<>();
     private float totalDistance; // in meters
-    private long beginCurrentKilometer, durationLastKilometer;
+    private long beginCurrentKilometer;
+    private float currentKilometerDistance;
+    private List<Long> pacePerKilometer = new ArrayList<>();
+
 
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
     static {
@@ -88,22 +91,29 @@ public class Run {
         return numberFormat.format(getLastSpeed()) + " km/h";
     }
 
-    // minutes per km
-    public float getPace() {
-        return totalDistance > 0 ? getDuration()/60/totalDistance : 0;
+    // millis per km
+    public long getPace() {
+        return totalDistance > 0 ? (long)(getDuration()/totalDistance*1000) : 0;
     }
 
     public String getPaceString() {
-        return paceFormatter.format(getPace()*60*1000) + " Min/km";
+        return formatDuration(getPace());
     }
 
-    // minutes per km
-    public float getKilometerPace() {
-      return durationLastKilometer > 0 ? durationLastKilometer/60/1000 : 0;
-    }
 
     public String getKilometerPaceString() {
-        return paceFormatter.format(getKilometerPace()*60*1000) + " Min/km";
+        if (pacePerKilometer.size() == 0) {
+            return formatDuration(0);
+        } else {
+            StringBuilder result = new StringBuilder();
+            for (int i = pacePerKilometer.size() -1; i >= 0; i--) {
+                result.append(formatDuration(pacePerKilometer.get(i)));
+                if (i > 0) {
+                    result.append(", ");
+                }
+            }
+            return result.toString();
+        }
     }
 
     // millis
@@ -140,10 +150,13 @@ public class Run {
                 int currentKilometer = (int) (totalDistance / 1000);
                 int newKilometer = (int) ((totalDistance + newDistance) / 1000);
                 if (newKilometer > currentKilometer) {
-                    durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
+                    long durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
+                    float distanceCurrentKilometer = totalDistance + newDistance - currentKilometerDistance;
+                    pacePerKilometer.add((long)(durationLastKilometer/distanceCurrentKilometer*1000));
                     Toast.makeText(app.getApplicationContext(), formatDuration(durationLastKilometer),
                             Toast.LENGTH_LONG).show();
                     beginCurrentKilometer = System.currentTimeMillis();
+                    currentKilometerDistance = totalDistance + newDistance;
                 }
                 totalDistance += newDistance;
             }

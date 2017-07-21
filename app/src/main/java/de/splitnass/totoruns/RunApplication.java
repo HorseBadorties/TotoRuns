@@ -9,7 +9,7 @@ public class RunApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        run = new Run();
+        run = new Run(this);
     }
 
     public Run getRun() {
