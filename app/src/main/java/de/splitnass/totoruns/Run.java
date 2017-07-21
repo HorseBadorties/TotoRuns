@@ -1,9 +1,11 @@
 package de.splitnass.totoruns;
 
 
+import android.app.Application;
 import android.icu.text.NumberFormat;
 import android.icu.text.SimpleDateFormat;
 import android.location.Location;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -12,6 +14,11 @@ import java.util.List;
 
 public class Run {
 
+    public Run(Application app) {
+        this.app = app;
+    }
+
+    private Application app;
     private long start, end;
     private List<Location> locations = new ArrayList<>();
     private float totalDistance; // in meters
@@ -107,7 +114,11 @@ public class Run {
     }
 
     public String getDurationString() {
-        long seconds = getDuration()/1000;
+       return formatDuration(getDuration());
+    }
+
+    private static String formatDuration(long millis) {
+        long seconds = millis/1000;
         return String.format(
                 "%d:%02d:%02d",
                 seconds / 3600,
@@ -125,13 +136,17 @@ public class Run {
                 beginCurrentKilometer = System.currentTimeMillis();
             }
             float newDistance = locations.isEmpty() ? 0 : newLocation.distanceTo(lastLocation());
-            int currentKilometer = (int)(totalDistance/1000);
-            int newKilometer = (int)((totalDistance+newDistance)/1000);
-            if (newKilometer > currentKilometer) {
-                durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
-                beginCurrentKilometer = System.currentTimeMillis();
+            if (newDistance > 0) {
+                int currentKilometer = (int) (totalDistance / 1000);
+                int newKilometer = (int) ((totalDistance + newDistance) / 1000);
+                if (newKilometer > currentKilometer) {
+                    durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
+                    Toast.makeText(app.getApplicationContext(), formatDuration(durationLastKilometer),
+                            Toast.LENGTH_LONG).show();
+                    beginCurrentKilometer = System.currentTimeMillis();
+                }
+                totalDistance += newDistance;
             }
-            totalDistance += newDistance;
         }
         locations.add(newLocation);
     }
