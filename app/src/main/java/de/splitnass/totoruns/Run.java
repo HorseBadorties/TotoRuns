@@ -1,11 +1,20 @@
 package de.splitnass.totoruns;
 
-
-import android.app.Application;
+import android.Manifest;
+import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.icu.text.NumberFormat;
 import android.icu.text.SimpleDateFormat;
 import android.location.Location;
+import android.support.v4.app.ActivityCompat;
 import android.widget.Toast;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -14,11 +23,7 @@ import java.util.List;
 
 public class Run {
 
-    public Run(Application app) {
-        this.app = app;
-    }
-
-    private Application app;
+    private Activity activity;
     private long start, end;
     private List<Location> locations = new ArrayList<>();
     private float totalDistance; // in meters
@@ -26,13 +31,81 @@ public class Run {
     private float currentKilometerDistance;
     private List<Long> pacePerKilometer = new ArrayList<>();
 
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationRequest mLocationRequest;
+    private LocationCallback mLocationCallback;
 
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
     static {
         numberFormat.setMaximumFractionDigits(2);
     }
+
     private static SimpleDateFormat paceFormatter = new SimpleDateFormat("mm:ss");
     private static Calendar calendar = new GregorianCalendar();
+
+
+    public Run(Activity activity) {
+        this.activity = activity;
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(activity.getApplicationContext());
+        mLocationRequest = LocationRequest.create()
+                .setInterval(5000)
+                .setFastestInterval(2000)
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        mLocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                for (Location location : locationResult.getLocations()) {
+                    if (location != null) {
+                        addLocation(location);
+                    }
+                }
+            }
+
+        };
+
+        try {
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(activity, new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            // Got last known location. In some rare situations this can be null.
+                            if (location != null) {
+                                Toast.makeText(Run.this.activity.getApplicationContext(),
+                                        "Got initial Location", Toast.LENGTH_SHORT).show();
+                                addLocation(location);
+                            }
+                        }
+                    });
+        } catch (SecurityException ex) {
+            ex.printStackTrace();
+        }
+
+        startLocationUpdates();
+    }
+
+    private void startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(activity.getApplicationContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest,
+                mLocationCallback,
+                null /* Looper */);
+    }
+
+    private void stopLocationUpdates() {
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+    }
 
     public long getStart() {
         return start;
@@ -153,7 +226,7 @@ public class Run {
                     long durationLastKilometer = System.currentTimeMillis() - beginCurrentKilometer;
                     float distanceCurrentKilometer = totalDistance + newDistance - currentKilometerDistance;
                     pacePerKilometer.add((long)(durationLastKilometer/distanceCurrentKilometer*1000));
-                    Toast.makeText(app.getApplicationContext(), formatDuration(durationLastKilometer),
+                    Toast.makeText(activity.getApplicationContext(), formatDuration(durationLastKilometer),
                             Toast.LENGTH_LONG).show();
                     beginCurrentKilometer = System.currentTimeMillis();
                     currentKilometerDistance = totalDistance + newDistance;

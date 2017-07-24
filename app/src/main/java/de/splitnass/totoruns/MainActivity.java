@@ -37,9 +37,6 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
 
-    private FusedLocationProviderClient mFusedLocationClient;
-    private LocationRequest mLocationRequest;
-    private LocationCallback mLocationCallback;
     private GoogleMap googleMap;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -58,40 +55,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         MapFragment mapFragment = (MapFragment)getFragmentManager().findFragmentById(R.id.mapFragment);
         mapFragment.getMapAsync(this);
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        mLocationRequest = LocationRequest.create()
-                .setInterval(5000)
-                .setFastestInterval(2000)
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        mLocationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                for (Location location : locationResult.getLocations()) {
-                    if (location != null) {
-                        locationUpdated(location);
-                    }
-                }
-            }
-
-        };
-
-        try {
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                        @Override
-                        public void onSuccess(Location location) {
-                            // Got last known location. In some rare situations this can be null.
-                            if (location != null) {
-                                makeToast("Got initial Location");
-                                locationUpdated(location);
-                            }
-                        }
-                    });
-        } catch (SecurityException ex) {
-            ex.printStackTrace();
-        }
-
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
@@ -99,20 +62,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        try {
-            mFusedLocationClient.requestLocationUpdates(mLocationRequest,
-                    mLocationCallback,
-                    null /* Looper */);
-        } catch (SecurityException ex) {
-            ex.printStackTrace();
-        }
+        Log.i("MainActivity", "resuming");
         //mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        Log.i("MainActivity", "pausing");
         mSensorManager.unregisterListener(this);
     }
 
