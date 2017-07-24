@@ -106,13 +106,13 @@ public class MainActivity extends AppCompatActivity implements RunListener, OnMa
     }
 
     private void makeToast(String text) {
-        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
         Log.i("TotoRuns", text);
     }
 
     public void toggleActive(View view) {
         if (run.isActive()) {
             run.stop();
+            Log.i("XML", run.asXML());
         } else {
             run.start();
         }

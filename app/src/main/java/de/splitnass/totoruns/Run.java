@@ -16,12 +16,27 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 public class Run {
 
@@ -255,5 +270,44 @@ public class Run {
         return locations;
     }
 
+    public String asXML()  {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        try {
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.newDocument();
+            Element gpx = doc.createElement("gpx");
+            gpx.setAttribute("version", "1.1");
+            gpx.setAttribute("creator", "TotoRuns");
+            Element trk = doc.createElement("trk");
+            gpx.appendChild(trk);
+            Element trkseg = doc.createElement("trkseg");
+            trk.appendChild(trkseg);
+            for (Location l : locations) {
+                Element trkpt = doc.createElement("trkpt");
+                trkpt.setAttribute("lon", String.valueOf(l.getLongitude()));
+                trkpt.setAttribute("lat", String.valueOf(l.getLatitude()));
+                trkseg.appendChild(trkpt);
+                Element ele = doc.createElement("ele");
+                ele.appendChild(doc.createTextNode(String.valueOf(l.getAltitude())));
+                trkpt.appendChild(ele);
+                Element time = doc.createElement("time");
+                time.appendChild(doc.createTextNode("<timestamp " + l.getTime() + ">"));
+                trkpt.appendChild(time);
+            }
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StringWriter stringWriter = new StringWriter();
+            StreamResult stream = new StreamResult(stringWriter);
+            transformer.transform(source, stream);
+            return stringWriter.toString();
+        } catch (ParserConfigurationException pce) {
+            return pce.getLocalizedMessage();
+        } catch (TransformerException te) {
+            return te.getLocalizedMessage();
+        }
+
+    }
 
 }
