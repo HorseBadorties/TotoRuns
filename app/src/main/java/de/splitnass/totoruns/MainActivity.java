@@ -35,7 +35,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
+public class MainActivity extends AppCompatActivity implements RunListener, OnMapReadyCallback, SensorEventListener {
 
     private GoogleMap googleMap;
     private SensorManager mSensorManager;
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        run = ((RunApplication)getApplication()).getRun();
+        run = new Run(this);
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onResume() {
         super.onResume();
         Log.i("MainActivity", "resuming");
+        run.addRunListener(this);
         //mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
@@ -70,16 +71,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onPause() {
         super.onPause();
         Log.i("MainActivity", "pausing");
+        run.removeRunListener(this);
         mSensorManager.unregisterListener(this);
     }
 
-
-    private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
-    static {
-        numberFormat.setMaximumFractionDigits(2);
-    }
-
-    private void locationUpdated(Location newLocation) {
+    public void locationUpdated(Location newLocation) {
         if (newLocation == null) return;
 
         googleMap.clear();
@@ -87,9 +83,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         googleMap.addMarker(new MarkerOptions().position(loc));
         TextView textView = (TextView) findViewById(R.id.firstText);
-        if (run.isActive()) {
-            run.addLocation(newLocation);
-        }
 
         StringBuilder message = new StringBuilder();
         message.append(String.format("Accuracy : %d (%tT) - Readings : %d",

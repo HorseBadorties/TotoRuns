@@ -19,7 +19,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Run {
 
@@ -35,6 +37,8 @@ public class Run {
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
 
+    private Set<RunListener> runListeners = new HashSet<>();
+
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
     static {
         numberFormat.setMaximumFractionDigits(2);
@@ -43,6 +47,13 @@ public class Run {
     private static SimpleDateFormat paceFormatter = new SimpleDateFormat("mm:ss");
     private static Calendar calendar = new GregorianCalendar();
 
+    public void addRunListener(RunListener l) {
+        runListeners.add(l);
+    }
+
+    public void removeRunListener(RunListener l) {
+        runListeners.remove(l);
+    }
 
     public Run(Activity activity) {
         this.activity = activity;
@@ -235,6 +246,9 @@ public class Run {
             }
         }
         locations.add(newLocation);
+        for (RunListener l : runListeners) {
+            l.locationUpdated(newLocation);
+        }
     }
 
     public List<Location> getLocations() {
