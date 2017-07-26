@@ -240,7 +240,7 @@ public class Run {
     }
 
     public void addLocation(Location newLocation) {
-        if (isActive() && !locations.isEmpty()) {
+        if (isActive()) {
             if (beginCurrentKilometer == 0) {
                 beginCurrentKilometer = System.currentTimeMillis();
             }
@@ -259,8 +259,9 @@ public class Run {
                 }
                 totalDistance += newDistance;
             }
+            locations.add(newLocation);
         }
-        locations.add(newLocation);
+
         for (RunListener l : runListeners) {
             l.locationUpdated(newLocation);
         }
@@ -270,14 +271,16 @@ public class Run {
         return locations;
     }
 
-    public String asXML()  {
+    public String asGPX()  {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         try {
+            SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.newDocument();
             Element gpx = doc.createElement("gpx");
             gpx.setAttribute("version", "1.1");
             gpx.setAttribute("creator", "TotoRuns");
+            doc.appendChild(gpx);
             Element trk = doc.createElement("trk");
             gpx.appendChild(trk);
             Element trkseg = doc.createElement("trkseg");
@@ -291,10 +294,9 @@ public class Run {
                 ele.appendChild(doc.createTextNode(String.valueOf(l.getAltitude())));
                 trkpt.appendChild(ele);
                 Element time = doc.createElement("time");
-                time.appendChild(doc.createTextNode("<timestamp " + l.getTime() + ">"));
+                time.appendChild(doc.createTextNode(isoDateFormat.format(new java.util.Date(l.getTime()))));
                 trkpt.appendChild(time);
             }
-            // write the content into xml file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             DOMSource source = new DOMSource(doc);

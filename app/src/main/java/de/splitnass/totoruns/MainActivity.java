@@ -1,14 +1,17 @@
 package de.splitnass.totoruns;
 
+import android.app.DownloadManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.icu.text.NumberFormat;
+import android.icu.text.DateFormat;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -19,11 +22,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -31,9 +29,10 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
 
-import java.util.Arrays;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements RunListener, OnMapReadyCallback, SensorEventListener {
 
@@ -78,10 +77,14 @@ public class MainActivity extends AppCompatActivity implements RunListener, OnMa
     public void locationUpdated(Location newLocation) {
         if (newLocation == null) return;
 
+
         googleMap.clear();
         LatLng loc = new LatLng(newLocation.getLatitude(), newLocation.getLongitude());
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
         googleMap.addMarker(new MarkerOptions().position(loc));
+        if (googleMap.getCameraPosition().zoom < 10) {
+            googleMap.animateCamera(CameraUpdateFactory.zoomTo(13));
+        }
         TextView textView = (TextView) findViewById(R.id.firstText);
 
         StringBuilder message = new StringBuilder();
@@ -105,19 +108,51 @@ public class MainActivity extends AppCompatActivity implements RunListener, OnMa
         }
     }
 
-    private void makeToast(String text) {
-        Log.i("TotoRuns", text);
-    }
 
     public void toggleActive(View view) {
         if (run.isActive()) {
             run.stop();
-            Log.i("XML", run.asXML());
+            new AsyncTask<Run, Object, Integer>() {
+                @Override
+                protected Integer doInBackground(Run... params) {
+                    downloadGPX(MainActivity.this.getApplicationContext(), params[0]);
+                    return 1;
+                }
+                @Override
+                protected void onPostExecute(Integer result) {
+                    Toast.makeText(MainActivity.this.getApplicationContext(), "GPX file saved",
+                            Toast.LENGTH_LONG).show();
+                }
+
+            }.execute(run);
+
         } else {
             run.start();
         }
         Button button = (Button) findViewById(R.id.button3);
         button.setText(run.isActive() ? "Stop" : "Start");
+    }
+
+    private static void downloadGPX(Context context, Run r) {
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String timestamp = DateFormat.getDateTimeInstance().format(new Date(r.getEnd()));
+        File xmlFile = new File(dir, "TotoRuns-" + timestamp + ".gpx");
+        FileOutputStream outputStream;
+        try {
+            if (xmlFile.exists()) {
+                xmlFile.delete();
+            }
+            outputStream = new FileOutputStream(xmlFile);
+            outputStream.write(r.asGPX().getBytes());
+            outputStream.flush();
+            outputStream.close();
+            DownloadManager dm = (DownloadManager)context.getSystemService(Context.DOWNLOAD_SERVICE);
+            dm.addCompletedDownload(xmlFile.getName(),
+                    "TotoRuns GPX", false, "gpx", xmlFile.getAbsolutePath(), 1, false);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -146,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements RunListener, OnMa
     @Override
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(17));
         Toast.makeText(getApplicationContext(), "Map is ready", Toast.LENGTH_SHORT).show();
     }
 
